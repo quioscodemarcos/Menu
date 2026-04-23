@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiosco de Marcos — Menú</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --negro: #0a0a0a; --negro2: #111111; --negro3: #1a1a1a;
+    --amarillo: #FFE500; --blanco: #f5f5f5;
+    --gris: #888; --gris2: #444; --rojo: #ff4444; --verde: #44cc88;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--negro); color:var(--blanco); font-family:'Barlow',sans-serif; min-height:100vh; overflow-x:hidden; }
+
+  header { background:var(--negro); border-bottom:2px solid var(--amarillo); padding:20px 20px 14px; text-align:center; position:sticky; top:0; z-index:100; box-shadow:0 4px 30px rgba(255,229,0,0.12); }
+  .header-top { display:flex; align-items:center; justify-content:center; gap:12px; margin-bottom:4px; }
+  .logo-circle { width:48px; height:48px; border-radius:50%; background:var(--amarillo); display:flex; align-items:center; justify-content:center; font-family:'Bebas Neue',sans-serif; font-size:20px; color:var(--negro); flex-shrink:0; }
+  .header-title { font-family:'Bebas Neue',sans-serif; font-size:clamp(28px,7vw,48px); letter-spacing:3px; color:var(--amarillo); text-shadow:0 0 30px rgba(255,229,0,0.35); }
+  .header-sub { font-family:'Barlow Condensed',sans-serif; font-size:11px; letter-spacing:5px; color:var(--gris); text-transform:uppercase; margin-bottom:12px; }
+  .horarios { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+  .horario-pill { background:var(--negro3); border:1px solid var(--gris2); border-radius:20px; padding:3px 12px; font-size:11px; font-family:'Barlow Condensed',sans-serif; letter-spacing:1px; color:var(--gris); }
+  .horario-pill span { color:var(--amarillo); font-weight:700; }
+
+  .admin-toggle { position:fixed; bottom:20px; left:20px; z-index:300; background:var(--negro3); border:1px solid var(--gris2); color:var(--gris); width:42px; height:42px; border-radius:50%; font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s; }
+  .admin-toggle:hover { border-color:var(--amarillo); color:var(--amarillo); }
+
+  .cat-nav { display:flex; gap:8px; padding:12px 14px; overflow-x:auto; background:var(--negro2); border-bottom:1px solid var(--negro3); scrollbar-width:none; }
+  .cat-nav::-webkit-scrollbar { display:none; }
+  .cat-btn { flex-shrink:0; background:var(--negro3); border:1px solid var(--gris2); color:var(--gris); padding:6px 14px; border-radius:20px; font-family:'Barlow Condensed',sans-serif; font-size:13px; letter-spacing:1px; cursor:pointer; transition:all 0.2s; white-space:nowrap; }
+  .cat-btn:hover, .cat-btn.active { background:var(--amarillo); border-color:var(--amarillo); color:var(--negro); font-weight:700; }
+
+  main { padding:20px 16px 100px; max-width:640px; margin:0 auto; }
+  .categoria { margin-bottom:36px; display:none; }
+  .categoria.visible { display:block; animation:fadeUp 0.3s ease; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+  .cat-title { font-family:'Bebas Neue',sans-serif; font-size:26px; letter-spacing:3px; color:var(--amarillo); border-bottom:1px solid var(--gris2); padding-bottom:8px; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+  .subcat-label { font-family:'Barlow Condensed',sans-serif; font-size:10px; letter-spacing:3px; color:var(--gris2); text-transform:uppercase; margin:16px 0 4px; }
+
+  .item { display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid #1e1e1e; gap:10px; }
+  .item:last-of-type { border-bottom:none; }
+  .item-info { flex:1; }
+  .item-name { font-family:'Barlow Condensed',sans-serif; font-size:16px; font-weight:600; color:var(--blanco); display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+  .badge-top { background:var(--amarillo); color:var(--negro); font-size:9px; font-weight:700; letter-spacing:1px; padding:2px 6px; border-radius:4px; font-family:'Barlow Condensed',sans-serif; }
+  .item-desc { font-size:12px; color:var(--gris); margin-top:2px; font-style:italic; }
+  .item-price { font-family:'Bebas Neue',sans-serif; font-size:20px; color:var(--amarillo); letter-spacing:1px; white-space:nowrap; }
+
+  /* ADMIN MODE */
+  .admin-mode .item { background:rgba(255,229,0,0.02); border-radius:8px; padding:10px 8px; margin-bottom:4px; border:1px solid #222 !important; }
+  .admin-mode .item:hover { border-color:var(--gris2) !important; }
+  [contenteditable="true"] { cursor:text; }
+  [contenteditable="true"]:focus { background:rgba(255,229,0,0.08); border-radius:4px; outline:2px solid var(--amarillo); padding:2px 6px; }
+  .editable { background:transparent; border:none; color:inherit; font-family:inherit; font-size:inherit; font-weight:inherit; letter-spacing:inherit; display:inline; min-width:20px; }
+  .editable-price { background:transparent; border:none; font-family:'Bebas Neue',sans-serif; font-size:20px; color:var(--amarillo); letter-spacing:1px; min-width:60px; text-align:right; }
+
+  .item-actions { display:none; gap:6px; margin-left:6px; flex-shrink:0; }
+  .admin-mode .item-actions { display:flex; }
+  .btn-icon { background:none; border:1px solid #333; color:var(--gris2); width:30px; height:30px; border-radius:6px; cursor:pointer; font-size:13px; display:flex; align-items:center; justify-content:center; transition:all 0.2s; flex-shrink:0; }
+  .btn-icon.del:hover { border-color:var(--rojo); color:var(--rojo); }
+  .btn-icon.top.on, .btn-icon.top:hover { border-color:var(--amarillo); color:var(--amarillo); }
+
+  .btn-add-item { display:none; width:100%; margin-top:10px; background:rgba(255,229,0,0.04); border:1px dashed var(--gris2); color:var(--gris); padding:10px; border-radius:8px; font-family:'Barlow Condensed',sans-serif; font-size:13px; letter-spacing:1px; cursor:pointer; transition:all 0.2s; }
+  .admin-mode .btn-add-item { display:block; }
+  .btn-add-item:hover { border-color:var(--amarillo); color:var(--amarillo); }
+
+  /* ADMIN BAR */
+  .admin-bar { display:none; position:fixed; top:0; left:0; right:0; z-index:500; background:#0f0f0f; border-bottom:2px solid var(--amarillo); padding:8px 16px; align-items:center; gap:10px; }
+  .admin-bar.on { display:flex; }
+  .admin-bar-title { font-family:'Bebas Neue',sans-serif; font-size:17px; color:var(--amarillo); letter-spacing:2px; flex:1; }
+  .btn-guardar { background:var(--amarillo); color:var(--negro); border:none; padding:7px 20px; border-radius:20px; font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:700; letter-spacing:1px; cursor:pointer; }
+  .btn-guardar:hover { background:#fff; }
+  .btn-salir { background:none; border:1px solid var(--gris2); color:var(--gris); padding:7px 14px; border-radius:20px; font-family:'Barlow Condensed',sans-serif; font-size:13px; cursor:pointer; }
+  .btn-salir:hover { border-color:var(--rojo); color:var(--rojo); }
+  .save-ok { font-family:'Barlow Condensed',sans-serif; font-size:12px; color:var(--verde); letter-spacing:1px; opacity:0; transition:opacity 0.3s; }
+  .save-ok.on { opacity:1; }
+
+  /* MODAL */
+  .modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:600; align-items:center; justify-content:center; }
+  .modal-bg.on { display:flex; }
+  .modal { background:var(--negro2); border:1px solid var(--gris2); border-radius:16px; padding:32px 28px; width:90%; max-width:320px; text-align:center; }
+  .modal h2 { font-family:'Bebas Neue',sans-serif; font-size:26px; color:var(--amarillo); letter-spacing:3px; margin-bottom:6px; }
+  .modal p { font-size:13px; color:var(--gris); margin-bottom:20px; }
+  .modal input[type=password] { width:100%; background:var(--negro3); border:1px solid var(--gris2); color:var(--blanco); padding:12px 16px; border-radius:10px; font-family:'Barlow',sans-serif; font-size:15px; outline:none; margin-bottom:10px; }
+  .modal input[type=password]:focus { border-color:var(--amarillo); }
+  .btn-login { width:100%; background:var(--amarillo); color:var(--negro); border:none; padding:12px; border-radius:10px; font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:2px; cursor:pointer; }
+  .btn-login:hover { background:#fff; }
+  .modal-err { color:var(--rojo); font-size:12px; margin-top:6px; min-height:16px; }
+  .btn-cancelar { background:none; border:none; color:var(--gris); font-size:12px; cursor:pointer; margin-top:10px; font-family:'Barlow',sans-serif; text-decoration:underline; display:block; margin-inline:auto; }
+
+  footer { text-align:center; padding:20px; font-size:11px; color:var(--gris2); font-family:'Barlow Condensed',sans-serif; letter-spacing:2px; border-top:1px solid #1a1a1a; }
+  footer strong { color:var(--amarillo); }
+
+  .back-top { position:fixed; bottom:20px; right:20px; background:var(--amarillo); color:var(--negro); border:none; width:42px; height:42px; border-radius:50%; font-size:20px; cursor:pointer; display:none; align-items:center; justify-content:center; box-shadow:0 4px 20px rgba(255,229,0,0.35); z-index:200; }
+  .back-top.on { display:flex; }
+  body.admin-on { padding-top:48px; }
+</style>
+</head>
+<body>
+
+<!-- BARRA ADMIN -->
+<div class="admin-bar" id="adminBar">
+  <div class="admin-bar-title">⚙ MODO EDICIÓN</div>
+  <span class="save-ok" id="saveOk">✓ Guardado</span>
+  <button class="btn-guardar" onclick="guardar()">Guardar</button>
+  <button class="btn-salir" onclick="salirAdmin()">Salir</button>
+</div>
+
+<!-- MODAL LOGIN -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h2>Acceso Admin</h2>
+    <p>Ingresa la clave para editar el menú</p>
+    <input type="password" id="pwInput" placeholder="Clave" onkeydown="if(event.key==='Enter')login()">
+    <button class="btn-login" onclick="login()">Entrar</button>
+    <div class="modal-err" id="modalErr"></div>
+    <button class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
+  </div>
+</div>
+
+<header>
+  <div class="header-top">
+    <div class="logo-circle">QM</div>
+    <div><div class="header-title">Quiosco de Marcos</div></div>
+  </div>
+  <div class="header-sub">Synchronicity · Gym &amp; Wellness</div>
+  <div class="horarios">
+    <div class="horario-pill">Lun–Vie <span>7:00–19:00</span></div>
+    <div class="horario-pill">Sábado <span>9:00–14:00</span></div>
+    <div class="horario-pill">Domingo <span>Cerrado</span></div>
+  </div>
+</header>
+
+<nav class="cat-nav">
+  <button class="cat-btn active" onclick="filtrar('todo',this)">Todo</button>
+  <button class="cat-btn" onclick="filtrar('cafeteria',this)">☕ Cafetería</button>
+  <button class="cat-btn" onclick="filtrar('batidos',this)">🥤 Batidos</button>
+  <button class="cat-btn" onclick="filtrar('bebidas',this)">💧 Bebidas</button>
+  <button class="cat-btn" onclick="filtrar('snacks',this)">🍫 Snacks</button>
+  <button class="cat-btn" onclick="filtrar('proteinas',this)">💪 Proteínas</button>
+  <button class="cat-btn" onclick="filtrar('platos',this)">🍽️ Platos Preparados</button>
+</nav>
+
+<main id="menuMain">
+
+  <section class="categoria visible" data-cat="cafeteria" id="sec-cafeteria">
+    <div class="cat-title"><span>☕</span> Cafetería</div>
+    <div class="subcat-label">Calientes</div>
+    <div class="item">
+      <div class="item-info"><div class="item-name"><span class="editable">Café Americano</span> <span class="badge-top">★ TOP</span></div></div>
+      <div class="item-price"><span class="editable-price">$1.500</span></div>
+      <div class="item-actions"><button class="btn-icon top on" onclick="toggleTop(this)" title="TOP">★</button><button class="btn-icon del" onclick="delItem(this)" title="Eliminar">✕</button></div>
+    </div>
+    <div class="item">
+      <div class="item-info"><div class="item-name"><span class="editable">Espresso Simple</span></div></div>
+      <div class="item-price"><span class="editable-price">$1.500</span></div>
+      <div class="item-actions"><button class="btn-icon top" onclick="toggleTop(this)">★</button><button class="btn-icon del" onclick="delItem(this)">✕</button></div>
+    </div>
+    <div class="item">
+      <div class="item-info"><div class="item-name"><span class="editable">Espresso Doble</span></div></div>
+      <div class="item-price"><span class="editable-price">$3.300</span></div>
+      <div class="item-actions"><button class="btn-icon top" onclick="toggleTop(this)">★</button><button class="btn-icon del" onclick="delItem(this)">✕</button></div>
+    </div>
+    <div class="item">
+      <div class="item-info"><div class="item-name"><span class="editable">Latte</span> <span class="badge-top">★ TOP</span></div></div>
+      <div class="item-price"><span class="editable-price">$3.300</span></div>
+      <div class="item-actions"><button class="btn-icon top on" onclick="toggleTop(this)">★</button><button class="btn-icon del" onclick="delItem(this)">✕</button></div>
+    </div>
+    <div class="item">
+      <div class="item-info"><div class="item-name"><span class="editable">Capuchino</span> <span class="badge-top">★ TOP</span></div></div>
+      <div class="item-price"><span class="editable-price">$3.300</span></div>
+      <div class="item-actions"><button class="btn-icon top on" onclick="toggleTop(this)">★</button><button class="btn-icon del" onclick="delItem(this)">✕</button></div>
+    </div>
+    <div class="item">
+      <div class="item-info"><div class="item-name"><span class="editable">Té</span></div></div>
+      <div class="item-price"><span class="editable-price">$1.200</span></div>
+      <div class="item-actions"><button class="btn-icon top" onclick="toggleTop(this)">★</button><button class="btn-icon del" onclick="delItem(this)">✕</button></div>
+    </div>
+    <div class="subcat-label">Fríos</div>
+    <div class="item">
+      <div class="item-info"><div class="item-name"><span class="editable">Café Frío</span></div></div>
+      <div class="item-price"><span class="editable-price">$2.500</span></div>
+      <div class="item-actions"><button class="btn-icon top" onclick="toggleTop(this)">★</button><button class="btn-icon del" onclick="delItem(this)">✕</button></div>
+    </div>
+    <button class="btn-add-item" onclick="addItem('sec-cafeteria')">+ Agregar producto</button>
+  </section>
+
+  <section class="categoria visible" data-cat="batidos" id="sec-batidos">
+    <div class="cat-title"><span>🥤</span> Batidos</div>
+    <div class="item">
+      <div class="item-info"><div class="item-name"><span class="editable">Batido de Proteína</span> <span class="badge-top">★ TOP</span></div><div class="item-desc">Varios sabores</div></div>
+      <div class="item-price"><span class="editable-price">$4.000</span></div>
+      <div class="item-actions"><button class="btn-icon top on" onclick="toggleTop(this)">★</button><button class="btn-icon del" onclick="delItem(this)">✕</button></div>
+    </div>
+    <div class="item">
+      <div class="item-info"><div class="item-name"><span class="editable">Batido Natural</span></div><div class="item-desc">Frutas de temporada</div></div>
+      <div class="item-price"><span class="editable-price">$3.500</span></div>
+      <div class="item-actions"><button class="btn-icon top" onclick="toggleTop(this)">★</button><button class="btn-icon del" onclick="delItem(this)">✕</button></div>
+    </div>
+    <div class="item">
+      <div class="item-info"><div class="item-name"><span class="editable">Batido con Leche sin Lactosa</span></div></div>
+      <div class="item-price"><span class="editable-price">$4.500</span></div>
+      <div class="item-actions"><button class="btn-icon top" onclick="toggleTop(this)">★</button><button class="btn-icon del" onclick="delItem(this)">✕</button></div>
+    </div>
+    <button class="btn-add-item" onclick="addItem('sec-batidos')">+ Agregar producto</button>
+  </section>
+
+  <section class="categoria visible" data-cat="bebidas" id="sec-bebidas">
+    <div class="cat-title"><span>💧</span> Bebidas</div>
+    <div class="subcat-label">Agua</div>
+    <div class="item">
+      <div class="item-info"><div class="item-name"><span class="editable">Agua 600 ml</span></div></div>
+      <div class="item-price"><span class="editable-price">$1.200</span></div>
+      <div class="item-actions"><button class="btn-icon top" onclick="toggleTop(this)">★</button><button class="btn-icon del" onclick="delItem(this)">✕</button></div>
+    </div>
+    <div class="item">
+      <div class="item-info"><div class="item-name"><span class="editable">Agua 1.6 lt</span></div></div>
+      <div class="item-price"><span class="editable-price">$2.500</span></div>
+      <div class="item-actions"><button class="btn-icon top" onclick="toggleTop(this)">★</button><button class="btn-icon del" onclick="delItem(this)">✕</button></div>
+    </div>
+    <div class="subcat-label">Energéticas</div>
+    <div class="item">
+      <div class="item-info"><div class="item-name"><span class="editable">Monster</span> <span class="badge-top">★ TOP</span></div></div>
+      <div class="item-price"><span class="editable-price">$2.500</span></div>
+      <div class="item-actions"><button class="btn-icon top on" onclick="toggleTop(this)">★</button><button class="btn-icon del" onclick="delItem(this)">✕</button></div>
+    </div>
+    <div class="item">
+      <div class="item-info"><div class="item-name"><span class="editable">Red Bull</span></div></div>
+      <div class="item-price"><span class="editable-price">$2.200</span></div>
+      <div class="item-actions"><button class="btn-icon top" onclick="toggleTop(this)">★</button><button class="btn-icon del" onclick="delItem(this)">✕</button></div>
+    </div>
+    <div class="item">
+      <div class="item-info"><div class="item-name"><span class="editable">Ghost</span></div></div>
+      <div class="item-price"><span class="editable-price">$3.000</span></div>
+      <div class="item-actions"><button class="btn-icon top" onclick="toggleTop(this)">★</button><button class="btn-icon del" onclick="delItem(this)">✕</button></div>
+    </div>
+    <div class="subcat-label">Jugos y Otros</div>
+    <div class="item">
+      <div class="item-info"><div class="item-name"><span class="editable">Jugo Natural</span></div></div>
+      <div class="item-price"><span class="editable-price">$2.000</span></div>
+      <div class="item-actions"><button class="btn-icon top" onclick="toggleTop(this)">★</button><button class="btn-icon del" onclick="delItem(this)">✕</button></div>
+    </div>
+    <div class="item">
+      <div class="item-info"><div class="item-name"><span class="editable">Leche sin Lactosa</span></div></div>
+      <div class="item-price"><span class="editable-price">$1.000</span></div>
+      <div class="item-actions"><button class="btn-icon top" onclick="toggleTop(this)">★</button><button class="btn-icon del" onclick="delItem(this)">✕</button></div>
+    </div>
+    <button class="btn-add-item" onclick="addItem('sec-bebidas')">+ Agregar producto</button>
+  </section>
+
+  <section class="categoria visible" data-cat="snacks" id="sec-snacks">
+    <div class="cat-title"><span>🍫</span> Snacks</div>
+    <div class="subcat-label">Dulces</div>
+    <div class="item">
+      <div class="item-info"><div class="item-name"><span class="editable">Alfajor Blanco</span> <span class="badge-top">★ TOP</span></div></div>
+      <div class="item-price"><span class="editable-price">$1.500</span></div>
+      <div class="item-actions"><button class="btn-icon top on" onclick="toggleTop(this)">★</button><button class="btn-icon del" onclick="delItem(this)">✕</button></div>
+    </div>
+    <div class="item">
+      <div class="item-info"><div class="item-name"><span class="editable">Alfajor Negro</span></div></div>
+      <div class="item-price"><span class="editable-price">$1.500</span></div>
+      <div class="item-actions"><button class="btn-icon top" onclick="toggleTop(this)">★</button><button class="btn-icon del" onclick="delItem(this)">✕</button></div>
+    </div>
+    <div class="item">
+      <div class="item-info"><div class="item-name"><span class="editable">Twenty's</span></div></div>
+      <div class="item-price"><span class="editable-price">$3.000</span></div>
+      <div class="item-actions"><button class="btn-icon top" onclick="toggleTop(this)">★</button><button class="btn-icon del" onclick="delItem(this)">✕</button></div>
+    </div>
+    <div class="item">
+      <div class="item-info"><div class="item-name"><span class="editable">Bite Caramel White</span></div></div>
+      <div class="item-price"><span class="editable-price">$3.000</span></div>
+      <div class="item-actions"><button class="btn-icon top" onclick="toggleTop(this)">★</button><button class="btn-icon del" onclick="delItem(this)">✕</button></div>
+    </div>
+    <div class="subcat-label">Salados / Fit</div>
+    <div class="item">
+      <div class="item-info"><div class="item-name"><span class="editable">Charqui</span> <span class="badge-top">★ TOP</span></div><div class="item-desc">Carne seca, alto en proteína</div></div>
+      <div class="item-price"><span class="editable-price">$3.500</span></div>
+      <div class="item-actions"><button class="btn-icon top on" onclick="toggleTop(this)">★</button><button class="btn-icon del" onclick="delItem(this)">✕</button></div>
+    </div>
+    <div class="item">
+      <div class="item-info"><div class="item-name"><span class="editable">Snack de Lentejas</span></div><div class="item-desc">Crocante y saludable</div></div>
+      <div class="item-price"><span class="editable-price">$3.500</span></div>
+      <div class="item-actions"><button class="btn-icon top" onclick="toggleTop(this)">★</button><button class="btn-icon del" onclick="delItem(this)">✕</button></div>
+    </div>
+    <button class="btn-add-item" onclick="addItem('sec-snacks')">+ Agregar producto</button>
+  </section>
+
+  <section class="categoria visible" data-cat="proteinas" id="sec-proteinas">
+    <div class="cat-title"><span>💪</span> Proteínas</div>
+    <div class="item">
+      <div class="item-info"><div class="item-name"><span class="editable">Helado de Proteína</span> <span class="badge-top">★ TOP</span></div><div class="item-desc">Varios sabores</div></div>
+      <div class="item-price"><span class="editable-price">$6.000</span></div>
+      <div class="item-actions"><button class="btn-icon top on" onclick="toggleTop(this)">★</button><button class="btn-icon del" onclick="delItem(this)">✕</button></div>
+    </div>
+    <div class="item">
+      <div class="item-info"><div class="item-name"><span class="editable">Barra Proteica</span></div></div>
+      <div class="item-price"><span class="editable-price">$2.500</span></div>
+      <div class="item-actions"><button class="btn-icon top" onclick="toggleTop(this)">★</button><button class="btn-icon del" onclick="delItem(this)">✕</button></div>
+    </div>
+    <button class="btn-add-item" onclick="addItem('sec-proteinas')">+ Agregar producto</button>
+  </section>
+
+  <section class="categoria visible" data-cat="platos" id="sec-platos">
+    <div class="cat-title"><span>🍽️</span> Platos Preparados</div>
+    <div class="item">
+      <div class="item-info"><div class="item-name"><span class="editable">Tostada Palta + Pollo + Huevo</span> <span class="badge-top">★ TOP</span></div></div>
+      <div class="item-price"><span class="editable-price">$4.500</span></div>
+      <div class="item-actions"><button class="btn-icon top on" onclick="toggleTop(this)">★</button><button class="btn-icon del" onclick="delItem(this)">✕</button></div>
+    </div>
+    <div class="item">
+      <div class="item-info"><div class="item-name"><span class="editable">Tostada Palta + Huevo</span></div></div>
+      <div class="item-price"><span class="editable-price">$3.500</span></div>
+      <div class="item-actions"><button class="btn-icon top" onclick="toggleTop(this)">★</button><button class="btn-icon del" onclick="delItem(this)">✕</button></div>
+    </div>
+    <div class="item">
+      <div class="item-info"><div class="item-name"><span class="editable">Tostada Simple</span></div></div>
+      <div class="item-price"><span class="editable-price">$2.000</span></div>
+      <div class="item-actions"><button class="btn-icon top" onclick="toggleTop(this)">★</button><button class="btn-icon del" onclick="delItem(this)">✕</button></div>
+    </div>
+    <div class="item">
+      <div class="item-info"><div class="item-name"><span class="editable">Sándwich del Día</span></div></div>
+      <div class="item-price"><span class="editable-price">$4.000</span></div>
+      <div class="item-actions"><button class="btn-icon top" onclick="toggleTop(this)">★</button><button class="btn-icon del" onclick="delItem(this)">✕</button></div>
+    </div>
+    <button class="btn-add-item" onclick="addItem('sec-platos')">+ Agregar producto</button>
+  </section>
+
+</main>
+
+<footer>
+  <strong>Quiosco de Marcos</strong> · Synchronicity<br>
+  Lun–Vie 7:00–19:00 &nbsp;|&nbsp; Sáb 9:00–14:00
+</footer>
+
+<button class="back-top" id="backTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+<button class="admin-toggle" id="adminToggle" onclick="abrirModal()" title="Admin">⚙</button>
+
+<script>
+const PW = 'Quioscodemarcos';
+let N = 100;
+
+// Filtro categorías
+function filtrar(cat, btn) {
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.categoria').forEach(s => s.classList.toggle('visible', cat==='todo' || s.dataset.cat===cat));
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// Modal
+function abrirModal() { document.getElementById('modalBg').classList.add('on'); setTimeout(()=>document.getElementById('pwInput').focus(),80); }
+function cerrarModal() { document.getElementById('modalBg').classList.remove('on'); document.getElementById('pwInput').value=''; document.getElementById('modalErr').textContent=''; }
+function login() {
+  if (document.getElementById('pwInput').value === PW) { cerrarModal(); activarAdmin(); }
+  else { document.getElementById('modalErr').textContent='Clave incorrecta'; document.getElementById('pwInput').value=''; document.getElementById('pwInput').focus(); }
+}
+
+// Admin
+function activarAdmin() {
+  document.getElementById('adminBar').classList.add('on');
+  document.getElementById('adminToggle').style.display='none';
+  document.getElementById('menuMain').classList.add('admin-mode');
+  document.body.classList.add('admin-on');
+  document.querySelectorAll('.editable, .editable-price').forEach(el => el.contentEditable='true');
+}
+function salirAdmin() {
+  document.getElementById('adminBar').classList.remove('on');
+  document.getElementById('adminToggle').style.display='flex';
+  document.getElementById('menuMain').classList.remove('admin-mode');
+  document.body.classList.remove('admin-on');
+  document.querySelectorAll('.editable, .editable-price').forEach(el => el.contentEditable='false');
+}
+
+function guardar() {
+  localStorage.setItem('qm_v2', document.getElementById('menuMain').innerHTML);
+  const m = document.getElementById('saveOk');
+  m.classList.add('on');
+  setTimeout(()=>m.classList.remove('on'), 2500);
+}
+
+// Cargar datos guardados
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem('qm_v2');
+  if (saved) {
+    document.getElementById('menuMain').innerHTML = saved;
+    document.querySelectorAll('.categoria').forEach(s=>s.classList.add('visible'));
+  }
+});
+
+// Toggle TOP badge
+function toggleTop(btn) {
+  const item = btn.closest('.item');
+  const nameDiv = item.querySelector('.item-name');
+  const badge = nameDiv.querySelector('.badge-top');
+  const isOn = btn.classList.toggle('on');
+  if (badge) badge.style.display = isOn ? 'inline' : 'none';
+}
+
+// Eliminar item
+function delItem(btn) {
+  if (confirm('¿Eliminar este producto?')) btn.closest('.item').remove();
+}
+
+// Agregar item
+function addItem(secId) {
+  const sec = document.getElementById(secId);
+  const btnAdd = sec.querySelector('.btn-add-item');
+  const d = document.createElement('div');
+  d.className = 'item';
+  d.innerHTML = `
+    <div class="item-info"><div class="item-name"><span class="editable" contenteditable="true">Nuevo producto</span></div></div>
+    <div class="item-price"><span class="editable-price" contenteditable="true">$0</span></div>
+    <div class="item-actions">
+      <button class="btn-icon top" onclick="toggleTop(this)">★</button>
+      <button class="btn-icon del" onclick="delItem(this)">✕</button>
+    </div>`;
+  sec.insertBefore(d, btnAdd);
+  setTimeout(()=>d.querySelector('.editable').focus(), 50);
+}
+
+// Back to top
+window.addEventListener('scroll', ()=>{ document.getElementById('backTop').classList.toggle('on', scrollY>200); });
+</script>
+</body>
+</html>
