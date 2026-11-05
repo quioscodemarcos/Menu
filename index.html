@@ -95,6 +95,26 @@
   .admin-toggle{position:fixed;bottom:20px;left:20px;z-index:300;background:var(--negro3);border:1px solid var(--gris2);color:var(--gris);width:42px;height:42px;border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;}
   .admin-toggle:hover{border-color:var(--amarillo);color:var(--amarillo);}
   body.admin-on{padding-top:48px;}
+  [hidden]{display:none!important;}
+  .menu-tools{max-width:640px;margin:auto;padding:18px 16px 0;}
+  .menu-tools label{display:block;color:#bbb;font-size:13px;margin-bottom:8px;}
+  #searchInput{width:100%;background:#1a1a1a;border:1px solid #666;color:#fff;border-radius:10px;padding:12px;font:inherit;}
+  #statusText{font-size:12px;color:#bbb;margin-top:10px;min-height:2.4em;}
+  #statusText.error{color:#ffd38c;}
+  #emptyState{text-align:center;padding:20px;color:#ccc;}
+  .subcat-label{color:#aaa;font-size:12px;}
+  .editable-desc:empty{display:none;}
+  .admin-mode .editable-desc:empty{display:block;min-height:20px;}
+  .admin-mode .editable-desc:empty:before{content:'Descripción opcional';color:#888;}
+  .item-info{min-width:0;overflow-wrap:anywhere;}
+  button:focus-visible,input:focus-visible{outline:2px solid var(--amarillo);outline-offset:3px;}
+  .admin-bar{flex-wrap:wrap;min-height:48px;}
+  body.admin-on{padding-top:100px;}
+  @media(min-width:640px){body.admin-on{padding-top:90px;}}
+  @media(max-width:420px){.admin-bar-title{flex-basis:45%;}.save-ok{flex-basis:45%;}.admin-bar .btn-salir{padding:7px 10px;}.admin-mode .item{flex-wrap:wrap;}.admin-mode .item-info{flex-basis:55%;}.admin-mode .item-actions{margin-left:auto;}}
+  .shake-extras{border:1px solid #766b1d;background:#17160c;border-radius:12px;padding:4px 14px 10px;margin:20px 0;}
+  .shake-extras .subcat-label{color:var(--amarillo);font-size:14px;letter-spacing:1px;line-height:1.5;}
+  .subcat-note{color:#ccc;font-size:12px;line-height:1.5;margin:8px 0;}
 </style>
 </head>
 <body>
@@ -102,11 +122,13 @@
 <div class="admin-bar" id="adminBar">
   <div class="admin-bar-title">⚙ MODO EDICIÓN</div>
   <span class="save-ok" id="saveOk">✓ Guardado en la nube</span>
-  <button class="btn-guardar" onclick="guardar()">Guardar</button>
+  <button class="btn-guardar" id="saveButton" onclick="guardar()">Guardar</button>
+  <button class="btn-salir" onclick="descargarRespaldo()">Respaldo</button>
+  <label class="btn-salir" for="importFile">Importar</label><input id="importFile" type="file" accept="application/json,.json" hidden>
   <button class="btn-salir" onclick="salirAdmin()">Salir</button>
 </div>
 
-<div class="modal-bg" id="modalBg">
+<div class="modal-bg" id="modalBg" role="dialog" aria-modal="true" aria-label="Acceso administrador">
   <div class="modal">
     <h2>Acceso Admin</h2>
     <p>Ingresa la clave para editar el menú</p>
@@ -130,7 +152,7 @@
   </div>
 </header>
 
-<nav class="cat-nav">
+<nav class="cat-nav" id="catNav" aria-label="Categorías">
   <button class="cat-btn active" data-cat="todo" onclick="filtrar('todo',this)">Todo</button>
   <button class="cat-btn" data-cat="cafeteria" onclick="filtrar('cafeteria',this)">☕ Cafetería</button>
   <button class="cat-btn" data-cat="batidos" onclick="filtrar('batidos',this)">🥤 Batidos</button>
@@ -141,308 +163,907 @@
   <button class="cat-btn" data-cat="combos" onclick="filtrar('combos',this)">🎁 Combos</button>
 </nav>
 
+<div class="menu-tools"><label for="searchInput">Buscar producto</label><input id="searchInput" type="search" placeholder="Café, proteína, agua…" autocomplete="off"><p id="statusText" role="status" aria-live="polite">Cargando menú…</p></div>
 <main id="menuMain">
   <div class="loading">
     <div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div>
     <br><br>Cargando menú...
   </div>
 </main>
+<p id="emptyState" hidden>No encontramos productos con esa búsqueda.</p>
+<noscript>Activa JavaScript para consultar el menú y sus precios actualizados.</noscript>
 
 <footer>
   <strong>Quiosco de Marcos</strong> · Synchronicity<br>
-  Lun–Vie 7:00–19:00 &nbsp;|&nbsp; Sáb 9:00–14:00
+  Lun–Vie 7:00–19:00 &nbsp;|&nbsp; Sáb 9:00–14:00<br><small>Versión 2026.11.05 · 3</small>
 </footer>
 
-<button class="back-top" id="backTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
-<button class="admin-toggle" id="adminToggle" onclick="abrirModal()" title="Admin">⚙</button>
+<button class="back-top" aria-label="Volver arriba" id="backTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+<button class="admin-toggle" id="adminToggle" onclick="abrirModal()" title="Administración" aria-label="Administración">⚙</button>
 
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="menu-core.js?v=20261105-3"></script>
 <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyArr-J4OkU-1vJpgm57BDIAaAPeMJR9Ijo",
-  authDomain: "quioscodemarcos.firebaseapp.com",
-  databaseURL: "https://quioscodemarcos-default-rtdb.firebaseio.com",
-  projectId: "quioscodemarcos",
-  storageBucket: "quioscodemarcos.firebasestorage.app",
-  messagingSenderId: "811429560302",
-  appId: "1:811429560302:web:36dd65c56594f3065518ff"
-};
-
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-const menuRef = db.ref('menu_v2');
-
-const PW = 'Quioscodemarcos';
-let adminActivo = false;
-let catActiva = 'todo';
-let N = 100;
-
 const menuInicial = {
-  categorias: [
-    { id:'cafeteria', icon:'☕', nombre:'Cafetería', subcats:[
-      { label:'Café', items:[
-        {id:'c1',nombre:'Espresso',precio:'$2.400',top:false},
-        {id:'c2',nombre:'Espresso Doble',precio:'$3.300',top:true},
-        {id:'c3',nombre:'Americano',precio:'$3.000',top:true},
-        {id:'c4',nombre:'Capuccino',precio:'$3.300',top:true},
-        {id:'c5',nombre:'Cortado',precio:'$3.300',top:false},
-        {id:'c6',nombre:'Latte',precio:'$3.300',top:false}
-      ]},
-      { label:'Té', items:[
-        {id:'c7',nombre:'Té',precio:'$2.500',top:false}
-      ]},
-      { label:'Yogurt', items:[
-        {id:'c8',nombre:'Yogurt Proteína / Oikos',precio:'$1.500',top:false}
-      ]}
-    ]},
-    { id:'batidos', icon:'🥤', nombre:'Batidos', subcats:[
-      { label:null, items:[
-        {id:'b1',nombre:'Batido ISO 100 (todos los sabores)',precio:'$4.500',top:true,desc:'Precio varía según tamaño y sabor'}
-      ]}
-    ]},
-    { id:'bebidas', icon:'💧', nombre:'Bebidas', subcats:[
-      { label:'Aguas', items:[
-        {id:'be1',nombre:'Agua Vital 600 ml sin gas',precio:'$1.500',top:true},
-        {id:'be2',nombre:'Agua Vital 600 ml con gas',precio:'$1.500',top:false},
-        {id:'be3',nombre:'Agua Vital 990 ml sin gas',precio:'$2.000',top:false},
-        {id:'be4',nombre:'Agua Vital 1.6 L sin gas',precio:'$2.500',top:false},
-        {id:'be5',nombre:'Agua Panna 500 ml sin gas',precio:'$2.500',top:false},
-        {id:'be6',nombre:'San Pellegrino 500 ml con gas',precio:'$2.500',top:false},
-        {id:'be7',nombre:'San Pellegrino limonada / peachy 330 ml',precio:'$1.800',top:false},
-        {id:'be8',nombre:'Agua Whey Protein (todos los sabores)',precio:'$3.000',top:false}
-      ]},
-      { label:'Bebidas', items:[
-        {id:'be9',nombre:'Coca-Cola sin azúcar 350 ml',precio:'$1.500',top:false},
-        {id:'be10',nombre:'Coca-Cola Light 350 ml',precio:'$1.500',top:false},
-        {id:'be11',nombre:'Sprite Ice sin azúcar',precio:'$1.500',top:false},
-        {id:'be12',nombre:'Fanta Pomelo',precio:'$1.500',top:false},
-        {id:'be13',nombre:'Jugo Mandarina / Limonada 300 cc',precio:'$3.000',top:false}
-      ]},
-      { label:'Electrolitos', items:[
-        {id:'be14',nombre:'Powerade 600 ml',precio:'$1.500',top:false},
-        {id:'be15',nombre:'Powerade 1.1 L',precio:'$2.500',top:false}
-      ]}
-    ]},
-    { id:'energeticas', icon:'⚡', nombre:'Energéticas', subcats:[
-      { label:null, items:[
-        {id:'en1',nombre:'Monster Ultra (todos los sabores)',precio:'$2.500',top:true},
-        {id:'en2',nombre:'Monster Ultra Peachy',precio:'$2.500',top:false},
-        {id:'en3',nombre:'Monster Paradise',precio:'$2.500',top:false},
-        {id:'en4',nombre:'Monster Zero Sugar',precio:'$2.000',top:false},
-        {id:'en5',nombre:'C4 (todos los sabores)',precio:'$3.000',top:true},
-        {id:'en6',nombre:'Ghost (todos los sabores)',precio:'$3.000',top:true},
-        {id:'en7',nombre:'Red Bull',precio:'$2.200',top:false},
-        {id:'en8',nombre:'Pre Entreno',precio:'$3.000',top:false}
-      ]}
-    ]},
-    { id:'snacks', icon:'🍫', nombre:'Snacks & Barras', subcats:[
-      { label:'Barras y galletas', items:[
-        {id:'s1',nombre:"Barra Twentys (todos los sabores)",precio:'$3.000',top:true},
-        {id:'s2',nombre:'Barra Bite',precio:'$3.000',top:false},
-        {id:'s3',nombre:'QNT (cookies, wafer, coconut, crunchy)',precio:'$2.500',top:false},
-        {id:'s4',nombre:'Protein Cookies',precio:'$3.000',top:false},
-        {id:'s5',nombre:'My Cookies',precio:'$4.000',top:false},
-        {id:'s6',nombre:'Galletas Almendras / Avellana (paquete)',precio:'$7.400',top:false}
-      ]},
-      { label:'Snacks', items:[
-        {id:'s7',nombre:'Snack Lentejas (todos los sabores)',precio:'$3.500',top:true,desc:'Crocante y saludable'},
-        {id:'s8',nombre:'Charqui Vacuno',precio:'$3.500',top:false,desc:'Alto en proteína'},
-        {id:'s9',nombre:'Edamame',precio:'$2.000',top:false},
-        {id:'s10',nombre:'Alfajor Chocolate',precio:'$3.300',top:false},
-        {id:'s11',nombre:'Alfajor Blanco',precio:'$3.600',top:false},
-        {id:'s12',nombre:'Snickfit',precio:'$3.600',top:false},
-        {id:'s13',nombre:'Chocolate Gano',precio:'$3.300',top:false},
-        {id:'s14',nombre:'Bon o Bon',precio:'$4.900',top:false},
-        {id:'s15',nombre:'Chicles Big Time',precio:'$1.800',top:false}
-      ]},
-      { label:'Suplementos', items:[
-        {id:'s16',nombre:'Amazing Care (BCA/creatina, unidad)',precio:'$1.000',top:true,desc:'Entrenadores y clientes'},
-        {id:'s17',nombre:'BCA',precio:'$2.000',top:false},
-        {id:'s18',nombre:'Scoop Maxi',precio:'$2.000',top:false}
-      ]},
-      { label:'Helados & Asaí', items:[
-        {id:'s19',nombre:'Helado Proteína (potes)',precio:'$7.000',top:true,desc:'Varios sabores'},
-        {id:'s20',nombre:'Asaí',precio:'$5.000',top:false},
-        {id:'s21',nombre:'Granola Fit',precio:'$7.000',top:false}
-      ]}
-    ]},
-    { id:'desayunos', icon:'🍳', nombre:'Desayunos', subcats:[
-      { label:null, items:[
-        {id:'d1',nombre:'Tostada Palta + Huevo',precio:'$7.000',top:false},
-        {id:'d2',nombre:'Tostada Palta + Pollo',precio:'$9.000',top:false},
-        {id:'d3',nombre:'Tostada Palta + Pollo + Huevo',precio:'$10.000',top:true},
-        {id:'d4',nombre:'Waffles Pollo / Pollo Huevo',precio:'$10.000',top:false},
-        {id:'d5',nombre:'Sándwich Pollo',precio:'$8.000',top:false},
-        {id:'d6',nombre:'Burrito Vacuno Queso / Pollo Teriyaki',precio:'$8.000',top:false}
-      ]}
-    ]},
-    { id:'combos', icon:'🎁', nombre:'Combos', subcats:[
-      { label:null, items:[
-        {id:'co1',nombre:'Agua 600 + Amazing Care',precio:'$2.500',top:true},
-        {id:'co2',nombre:'Agua 990 + Amazing Care / BCA Creatina',precio:'$3.000',top:false},
-        {id:'co3',nombre:'Agua 600 + BCA',precio:'$3.500',top:false},
-        {id:'co4',nombre:'Agua Panna + Amazing Care',precio:'$3.500',top:false},
-        {id:'co5',nombre:'Burrito + Bebida',precio:'$8.000',top:true},
-        {id:'co6',nombre:'Capuccino Gano',precio:'$3.300',top:false}
-      ]}
-    ]}
+  "categorias": [
+    {
+      "id": "cafeteria",
+      "icon": "☕",
+      "nombre": "Cafetería",
+      "subcats": [
+        {
+          "label": "Café",
+          "items": [
+            {
+              "id": "sheet-2026-54",
+              "nombre": "Espresso",
+              "precio": "$2.400",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-55",
+              "nombre": "Espresso doble",
+              "precio": "$3.300",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-56",
+              "nombre": "Capuchino",
+              "precio": "$3.300",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-57",
+              "nombre": "Latte",
+              "precio": "$3.300",
+              "top": false
+            },
+            {
+              "id": "cliente-c3",
+              "nombre": "Americano",
+              "precio": "$3.000",
+              "top": false
+            },
+            {
+              "id": "cliente-c5",
+              "nombre": "Cortado",
+              "precio": "$3.300",
+              "top": false
+            },
+            {
+              "id": "cliente-co6",
+              "nombre": "Capuchino Gano",
+              "precio": "$3.300",
+              "top": false
+            }
+          ]
+        },
+        {
+          "label": "Té",
+          "items": [
+            {
+              "id": "sheet-2026-59",
+              "nombre": "Té verde",
+              "precio": "$2.500",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-60",
+              "nombre": "Té Twinings",
+              "precio": "$2.500",
+              "top": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "batidos",
+      "icon": "🥤",
+      "nombre": "Batidos y agregados",
+      "subcats": [
+        {
+          "label": "Batidos ISO 100",
+          "items": [
+            {
+              "id": "sheet-2026-38",
+              "nombre": "Batido ISO 100 de chocolate",
+              "precio": "$3.000",
+              "top": false,
+              "desc": "Preparado con agua. Agrega leche, fruta o suplementos por los valores indicados abajo."
+            },
+            {
+              "id": "sheet-2026-39",
+              "nombre": "Batido ISO 100 de vainilla",
+              "precio": "$3.000",
+              "top": false,
+              "desc": "Preparado con agua. Agrega leche, fruta o suplementos por los valores indicados abajo."
+            },
+            {
+              "id": "sheet-2026-40",
+              "nombre": "Batido ISO 100 Cookies & Cream",
+              "precio": "$3.000",
+              "top": false,
+              "desc": "Preparado con agua. Agrega leche, fruta o suplementos por los valores indicados abajo."
+            },
+            {
+              "id": "sheet-2026-41",
+              "nombre": "Batido ISO 100 de frutilla",
+              "precio": "$3.000",
+              "top": false,
+              "desc": "Preparado con agua. Agrega leche, fruta o suplementos por los valores indicados abajo."
+            }
+          ]
+        },
+        {
+          "label": "Aminoácidos",
+          "items": [
+            {
+              "id": "sheet-2026-44",
+              "nombre": "BCA con creatina",
+              "precio": "$3.000",
+              "top": false
+            },
+            {
+              "id": "cliente-en8",
+              "nombre": "Preentreno",
+              "precio": "$3.000",
+              "top": false
+            },
+            {
+              "id": "cliente-s16",
+              "nombre": "Amazing Care con BCA o creatina · unidad",
+              "precio": "$1.000",
+              "top": false
+            }
+          ]
+        },
+        {
+          "label": "Agregados para batidos · precio adicional",
+          "items": [
+            {
+              "id": "sheet-2026-46",
+              "nombre": "Leche sin lactosa",
+              "precio": "$500",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-47",
+              "nombre": "Leche de almendras",
+              "precio": "$1.000",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-48",
+              "nombre": "Leche de coco",
+              "precio": "$1.000",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-49",
+              "nombre": "Creatina",
+              "precio": "$1.000",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-50",
+              "nombre": "Colágeno",
+              "precio": "$1.000",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-51",
+              "nombre": "Mantequilla de maní",
+              "precio": "$1.500",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-52",
+              "nombre": "Fruta: frutilla, plátano o arándano",
+              "precio": "$1.500",
+              "top": false
+            },
+            {
+              "id": "cliente-s18",
+              "nombre": "Porción de Waxy Maize",
+              "precio": "$2.000",
+              "top": false
+            },
+            {
+              "id": "legacy-extra-cafe",
+              "nombre": "Porción de café",
+              "precio": "$1.000",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-43",
+              "nombre": "BCA",
+              "precio": "$2.000",
+              "top": false
+            }
+          ],
+          "tipo": "agregados"
+        }
+      ]
+    },
+    {
+      "id": "bebidas",
+      "icon": "💧",
+      "nombre": "Bebidas",
+      "subcats": [
+        {
+          "label": "Aguas",
+          "items": [
+            {
+              "id": "sheet-2026-2",
+              "nombre": "Agua Panna sin gas · 500 ml",
+              "precio": "$2.500",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-3",
+              "nombre": "Agua San Pellegrino con gas · 500 ml",
+              "precio": "$2.500",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-4",
+              "nombre": "Agua Vital sin gas · 600 ml",
+              "precio": "$1.500",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-5",
+              "nombre": "Agua Vital con gas · 600 ml",
+              "precio": "$1.500",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-6",
+              "nombre": "Agua Vital sin gas · 990 ml",
+              "precio": "$2.000",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-7",
+              "nombre": "Agua Vital sin gas · 1,6 L",
+              "precio": "$2.500",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-8",
+              "nombre": "Agua Whey Protein de manzana",
+              "precio": "$3.000",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-9",
+              "nombre": "Agua Whey Protein de frambuesa",
+              "precio": "$3.000",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-10",
+              "nombre": "Agua Whey Protein de naranja",
+              "precio": "$3.000",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-11",
+              "nombre": "Agua Whey Protein de piña",
+              "precio": "$3.000",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-12",
+              "nombre": "Agua Whey Protein de arándano",
+              "precio": "$3.000",
+              "top": false
+            }
+          ]
+        },
+        {
+          "label": "Bebidas",
+          "items": [
+            {
+              "id": "sheet-2026-14",
+              "nombre": "Coca-Cola sin azúcar · 350 ml",
+              "precio": "$1.500",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-15",
+              "nombre": "Coca-Cola Light · 350 ml",
+              "precio": "$1.500",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-16",
+              "nombre": "Sprite Ice · 350 ml",
+              "precio": "$1.500",
+              "top": false
+            },
+            {
+              "id": "cliente-be7",
+              "nombre": "San Pellegrino Zero de limonada o durazno · 330 ml",
+              "precio": "$1.800",
+              "top": false
+            },
+            {
+              "id": "cliente-be12",
+              "nombre": "Fanta de pomelo",
+              "precio": "$1.500",
+              "top": false
+            },
+            {
+              "id": "cliente-be13",
+              "nombre": "Jugo de mandarina o limonada · 300 ml",
+              "precio": "$3.000",
+              "top": false
+            }
+          ]
+        },
+        {
+          "label": "Electrolitos",
+          "items": [
+            {
+              "id": "sheet-2026-31",
+              "nombre": "Powerade de uva · 1,1 L",
+              "precio": "$2.500",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-32",
+              "nombre": "Powerade Frozen · 1,1 L",
+              "precio": "$2.500",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-33",
+              "nombre": "Powerade de lima · 1,1 L",
+              "precio": "$2.500",
+              "top": false
+            },
+            {
+              "id": "cliente-be14",
+              "nombre": "Powerade · 600 ml",
+              "precio": "$1.500",
+              "top": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "energeticas",
+      "icon": "⚡",
+      "nombre": "Energéticas",
+      "subcats": [
+        {
+          "label": "C4",
+          "items": [
+            {
+              "id": "sheet-2026-18",
+              "nombre": "C4 Hawaiian Punch",
+              "precio": "$3.000",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-19",
+              "nombre": "C4 Orange",
+              "precio": "$3.000",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-20",
+              "nombre": "C4 Limón",
+              "precio": "$3.000",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-21",
+              "nombre": "C4 Frozen Bombsicle",
+              "precio": "$3.000",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-22",
+              "nombre": "C4 Grape (uva)",
+              "precio": "$3.000",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-23",
+              "nombre": "C4 Orange Slice",
+              "precio": "$3.000",
+              "top": false
+            }
+          ]
+        },
+        {
+          "label": "Monster",
+          "items": [
+            {
+              "id": "sheet-2026-25",
+              "nombre": "Monster Energy Ultra",
+              "precio": "$2.500",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-26",
+              "nombre": "Monster Ultra Peachy",
+              "precio": "$2.500",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-27",
+              "nombre": "Monster Paradise",
+              "precio": "$2.500",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-28",
+              "nombre": "Monster Gold",
+              "precio": "$2.300",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-29",
+              "nombre": "Monster Green",
+              "precio": "$2.300",
+              "top": false
+            }
+          ]
+        },
+        {
+          "label": "Otras energéticas",
+          "items": [
+            {
+              "id": "cliente-en4",
+              "nombre": "Monster Zero Sugar",
+              "precio": "$2.000",
+              "top": false
+            },
+            {
+              "id": "cliente-en6",
+              "nombre": "Ghost · sabores disponibles",
+              "precio": "$3.000",
+              "top": false
+            },
+            {
+              "id": "cliente-en7",
+              "nombre": "Red Bull",
+              "precio": "$2.200",
+              "top": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "snacks",
+      "icon": "🍫",
+      "nombre": "Snacks y proteínas",
+      "subcats": [
+        {
+          "label": "Yogurt",
+          "items": [
+            {
+              "id": "sheet-2026-35",
+              "nombre": "Yogur proteico Loncoleche · 142 g",
+              "precio": "$1.500",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-36",
+              "nombre": "Yogur griego Oikos · 142 g",
+              "precio": "$1.500",
+              "top": false
+            }
+          ]
+        },
+        {
+          "label": "Barras Twenty’s",
+          "items": [
+            {
+              "id": "sheet-2026-73",
+              "nombre": "Barra Twenty’s de chocolate",
+              "precio": "$3.000",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-74",
+              "nombre": "Barra Twenty’s de vainilla",
+              "precio": "$3.000",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-75",
+              "nombre": "Barra Twenty’s de praliné",
+              "precio": "$3.000",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-76",
+              "nombre": "Barra Twenty’s de limón",
+              "precio": "$3.000",
+              "top": false
+            }
+          ]
+        },
+        {
+          "label": "Barras Bite",
+          "items": [
+            {
+              "id": "sheet-2026-78",
+              "nombre": "Barra Bite Black & White",
+              "precio": "$3.000",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-79",
+              "nombre": "Barra Bite Caramel",
+              "precio": "$3.000",
+              "top": false
+            }
+          ]
+        },
+        {
+          "label": "Dark Bar",
+          "items": [
+            {
+              "id": "sheet-2026-81",
+              "nombre": "Dark Bar de chocolate amargo",
+              "precio": "$3.000",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-82",
+              "nombre": "Dark Bar Flocos con chips de chocolate",
+              "precio": "$3.000",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-83",
+              "nombre": "Dark Bar Cookies & Cream",
+              "precio": "$3.000",
+              "top": false
+            }
+          ]
+        },
+        {
+          "label": "Galletas de proteína",
+          "items": [
+            {
+              "id": "sheet-2026-85",
+              "nombre": "My Cookies Chocolate Candy Ganache",
+              "precio": "$4.000",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-86",
+              "nombre": "My Cookies Peanut Butter Jelly",
+              "precio": "$4.000",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-87",
+              "nombre": "My Cookies de frutilla",
+              "precio": "$4.000",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-88",
+              "nombre": "My Cookies Birthday Cake",
+              "precio": "$4.000",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-89",
+              "nombre": "My Cookies Childhood Cupcake",
+              "precio": "$4.000",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-90",
+              "nombre": "My Cookies Milk Cookies",
+              "precio": "$4.000",
+              "top": false
+            }
+          ]
+        },
+        {
+          "label": "Snacks salados",
+          "items": [
+            {
+              "id": "sheet-2026-92",
+              "nombre": "Charqui Feroz de vacuno",
+              "precio": "$3.500",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-93",
+              "nombre": "Charqui Feroz de cerdo",
+              "precio": "$3.000",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-94",
+              "nombre": "Chicharrón Feroz natural",
+              "precio": "$3.000",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-95",
+              "nombre": "Chicharrón Feroz picante",
+              "precio": "$3.000",
+              "top": false
+            },
+            {
+              "id": "cliente-s7",
+              "nombre": "Snack de lentejas · sabores disponibles",
+              "precio": "$3.500",
+              "top": false
+            },
+            {
+              "id": "cliente-s9",
+              "nombre": "Edamame",
+              "precio": "$2.000",
+              "top": false
+            }
+          ]
+        },
+        {
+          "label": "Snacks dulces",
+          "items": [
+            {
+              "id": "sheet-2026-97",
+              "nombre": "Alfajor de manjar",
+              "precio": "$3.300",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-98",
+              "nombre": "Alfajor blanco",
+              "precio": "$3.600",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-99",
+              "nombre": "Protein Ball Brownie",
+              "precio": "$2.000",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-100",
+              "nombre": "Protein Snickfit",
+              "precio": "$3.600",
+              "top": false
+            },
+            {
+              "id": "cliente-s13",
+              "nombre": "Chocolate Gano",
+              "precio": "$3.300",
+              "top": false
+            },
+            {
+              "id": "cliente-s14",
+              "nombre": "Bon o Bon",
+              "precio": "$4.900",
+              "top": false
+            }
+          ]
+        },
+        {
+          "label": "Açaí",
+          "items": [
+            {
+              "id": "sheet-2026-102",
+              "nombre": "Açaí Warana",
+              "precio": "$5.000",
+              "top": false
+            }
+          ]
+        },
+        {
+          "label": "Helados de proteína",
+          "items": [
+            {
+              "id": "sheet-2026-104",
+              "nombre": "Helado proteico de yogur y vainilla",
+              "precio": "$7.000",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-105",
+              "nombre": "Helado proteico de yogur y chocolate",
+              "precio": "$7.000",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-106",
+              "nombre": "Helado proteico de vainilla y mantequilla de maní",
+              "precio": "$7.000",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-107",
+              "nombre": "Helado proteico de vainilla y café",
+              "precio": "$7.000",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-108",
+              "nombre": "Helado proteico de vainilla y frutilla",
+              "precio": "$7.000",
+              "top": false
+            }
+          ]
+        },
+        {
+          "label": "Chicles",
+          "items": [
+            {
+              "id": "sheet-2026-110",
+              "nombre": "Chicles Big Time Clean Mint",
+              "precio": "$1.800",
+              "top": false
+            }
+          ]
+        },
+        {
+          "label": "Barras y galletas",
+          "items": [
+            {
+              "id": "cliente-s3",
+              "nombre": "QNT · cookies, wafer, coconut o crunchy",
+              "precio": "$2.500",
+              "top": false
+            },
+            {
+              "id": "cliente-s4",
+              "nombre": "Protein Cookies",
+              "precio": "$3.000",
+              "top": false
+            },
+            {
+              "id": "cliente-s6",
+              "nombre": "Galletas de almendras o avellana · paquete",
+              "precio": "$7.400",
+              "top": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "desayunos",
+      "icon": "🍳",
+      "nombre": "Desayunos y lunch",
+      "subcats": [
+        {
+          "label": "Lunch",
+          "items": [
+            {
+              "id": "sheet-2026-62",
+              "nombre": "Granola Fit",
+              "precio": "$7.000",
+              "top": false
+            }
+          ]
+        },
+        {
+          "label": "Desayunos",
+          "items": [
+            {
+              "id": "sheet-2026-64",
+              "nombre": "Tostada con palta y huevo",
+              "precio": "$7.000",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-65",
+              "nombre": "Tostada con palta y pollo",
+              "precio": "$9.000",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-66",
+              "nombre": "Tostada con palta, pollo y huevo",
+              "precio": "$10.000",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-67",
+              "nombre": "Waffles con pollo",
+              "precio": "$10.000",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-68",
+              "nombre": "Waffles con pollo y huevo",
+              "precio": "$10.000",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-69",
+              "nombre": "Waffles proteicos con fruta",
+              "precio": "$8.000",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-70",
+              "nombre": "Sándwich aliado",
+              "precio": "$5.500",
+              "top": false
+            },
+            {
+              "id": "sheet-2026-71",
+              "nombre": "Sándwich aliado con pollo",
+              "precio": "$7.000",
+              "top": false
+            },
+            {
+              "id": "cliente-d5",
+              "nombre": "Sándwich de pollo",
+              "precio": "$8.000",
+              "top": false
+            },
+            {
+              "id": "cliente-d6",
+              "nombre": "Burrito de vacuno con queso o pollo teriyaki",
+              "precio": "$8.000",
+              "top": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "combos",
+      "icon": "🎁",
+      "nombre": "Combos",
+      "subcats": [
+        {
+          "label": "Combos",
+          "items": [
+            {
+              "id": "cliente-co1",
+              "nombre": "Agua de 600 ml + Amazing Care",
+              "precio": "$2.500",
+              "top": false
+            },
+            {
+              "id": "cliente-co2",
+              "nombre": "Agua de 990 ml + Amazing Care o BCA con creatina",
+              "precio": "$3.000",
+              "top": false
+            },
+            {
+              "id": "cliente-co3",
+              "nombre": "Agua de 600 ml + BCA",
+              "precio": "$3.500",
+              "top": false
+            },
+            {
+              "id": "cliente-co4",
+              "nombre": "Agua Panna + Amazing Care",
+              "precio": "$3.500",
+              "top": false
+            },
+            {
+              "id": "cliente-co5",
+              "nombre": "Burrito + bebida",
+              "precio": "$8.000",
+              "top": false
+            }
+          ]
+        }
+      ]
+    }
   ]
 };
-
-function renderMenu(data) {
-  const main = document.getElementById('menuMain');
-  let html = '';
-  data.categorias.forEach(cat => {
-    const vis = (catActiva==='todo' || catActiva===cat.id) ? 'visible' : '';
-    html += `<section class="categoria ${vis}" data-cat="${cat.id}" id="sec-${cat.id}">`;
-    html += `<div class="cat-title"><span>${cat.icon}</span> ${cat.nombre}</div>`;
-    cat.subcats.forEach(sub => {
-      if (sub.label) html += `<div class="subcat-label">${sub.label}</div>`;
-      (sub.items||[]).forEach(item => {
-        html += `<div class="item" data-id="${item.id}">
-          <div class="item-info">
-            <div class="item-name">
-              <span class="editable">${item.nombre}</span>
-              <span class="badge-top" style="display:${item.top?'inline':'none'}">★ TOP</span>
-            </div>
-            ${item.desc?`<div class="item-desc">${item.desc}</div>`:''}
-          </div>
-          <div class="item-price"><span class="editable-price">${item.precio}</span></div>
-          <div class="item-actions">
-            <button class="btn-icon top ${item.top?'on':''}" onclick="toggleTop(this)">★</button>
-            <button class="btn-icon del" onclick="delItem(this)">✕</button>
-          </div>
-        </div>`;
-      });
-    });
-    html += `<button class="btn-add-item" onclick="addItem('sec-${cat.id}')">+ Agregar producto</button>`;
-    html += `</section>`;
-  });
-  main.innerHTML = html;
-  if (adminActivo) activarEdicion();
-}
-
-async function cargarMenu() {
-  // Mostrar menú inicial de inmediato (sin esperar red)
-  renderMenu(menuInicial);
-  try {
-    const snap = await menuRef.get();
-    if (snap.exists()) {
-      renderMenu(snap.val());
-    } else {
-      await menuRef.set(menuInicial);
-    }
-    // Escuchar cambios en tiempo real (para otros dispositivos)
-    menuRef.on('value', snap => {
-      if (snap.exists() && !adminActivo) renderMenu(snap.val());
-    });
-  } catch(e) {
-    // Si falla Firebase, el menú inicial ya está visible — no hacer nada
-    console.warn('Firebase no disponible, mostrando menú local.', e);
-  }
-}
-
-function leerMenuDOM() {
-  const categorias = [];
-  document.querySelectorAll('.categoria').forEach(sec => {
-    const titleEl = sec.querySelector('.cat-title');
-    const icon = titleEl.querySelector('span')?.textContent || '';
-    const nombre = titleEl.textContent.replace(icon,'').trim();
-    const cat = { id: sec.dataset.cat, icon, nombre, subcats: [] };
-    let sub = { label: null, items: [] };
-    Array.from(sec.children).forEach(el => {
-      if (el.classList.contains('subcat-label')) {
-        if (sub.items.length) cat.subcats.push(sub);
-        sub = { label: el.textContent, items: [] };
-      } else if (el.classList.contains('item')) {
-        const topBtn = el.querySelector('.btn-icon.top');
-        const descEl = el.querySelector('.item-desc');
-        const item = {
-          id: el.dataset.id || ('n'+N++),
-          nombre: el.querySelector('.editable')?.textContent || '',
-          precio: el.querySelector('.editable-price')?.textContent || '',
-          top: topBtn?.classList.contains('on') || false
-        };
-        if (descEl) item.desc = descEl.textContent;
-        sub.items.push(item);
-      }
-    });
-    if (sub.items.length) cat.subcats.push(sub);
-    categorias.push(cat);
-  });
-  return { categorias };
-}
-
-window.guardar = async function() {
-  try {
-    await menuRef.set(leerMenuDOM());
-    const m = document.getElementById('saveOk');
-    m.classList.add('on');
-    setTimeout(()=>m.classList.remove('on'), 2500);
-  } catch(e) { alert('Error al guardar. Verifica conexión.'); }
-};
-
-window.filtrar = function(cat, btn) {
-  catActiva = cat;
-  document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  document.querySelectorAll('.categoria').forEach(s=>s.classList.toggle('visible', cat==='todo'||s.dataset.cat===cat));
-  window.scrollTo({top:0,behavior:'smooth'});
-};
-
-window.abrirModal = function() { document.getElementById('modalBg').classList.add('on'); setTimeout(()=>document.getElementById('pwInput').focus(),80); };
-window.cerrarModal = function() { document.getElementById('modalBg').classList.remove('on'); document.getElementById('pwInput').value=''; document.getElementById('modalErr').textContent=''; };
-window.login = function() {
-  if (document.getElementById('pwInput').value===PW) { cerrarModal(); activarAdmin(); }
-  else { document.getElementById('modalErr').textContent='Clave incorrecta'; document.getElementById('pwInput').value=''; document.getElementById('pwInput').focus(); }
-};
-
-function activarAdmin() {
-  adminActivo=true;
-  document.getElementById('adminBar').classList.add('on');
-  document.getElementById('adminToggle').style.display='none';
-  document.getElementById('menuMain').classList.add('admin-mode');
-  document.body.classList.add('admin-on');
-  activarEdicion();
-}
-function activarEdicion() {
-  document.querySelectorAll('.editable,.editable-price').forEach(el=>el.contentEditable='true');
-}
-window.salirAdmin = function() {
-  adminActivo=false;
-  document.getElementById('adminBar').classList.remove('on');
-  document.getElementById('adminToggle').style.display='flex';
-  document.getElementById('menuMain').classList.remove('admin-mode');
-  document.body.classList.remove('admin-on');
-  document.querySelectorAll('.editable,.editable-price').forEach(el=>el.contentEditable='false');
-};
-
-window.toggleTop = function(btn) {
-  const item = btn.closest('.item');
-  const badge = item.querySelector('.badge-top');
-  const isOn = btn.classList.toggle('on');
-  if (badge) badge.style.display = isOn?'inline':'none';
-};
-window.delItem = function(btn) { if(confirm('¿Eliminar este producto?')) btn.closest('.item').remove(); };
-window.addItem = function(secId) {
-  const sec = document.getElementById(secId);
-  const btnAdd = sec.querySelector('.btn-add-item');
-  const d = document.createElement('div');
-  d.className='item'; d.dataset.id='n'+(N++);
-  d.innerHTML=`
-    <div class="item-info"><div class="item-name"><span class="editable" contenteditable="true">Nuevo producto</span><span class="badge-top" style="display:none">★ TOP</span></div></div>
-    <div class="item-price"><span class="editable-price" contenteditable="true">$0</span></div>
-    <div class="item-actions">
-      <button class="btn-icon top" onclick="toggleTop(this)">★</button>
-      <button class="btn-icon del" onclick="delItem(this)">✕</button>
-    </div>`;
-  sec.insertBefore(d, btnAdd);
-  setTimeout(()=>d.querySelector('.editable').focus(),50);
-};
-
-window.addEventListener('scroll',()=>document.getElementById('backTop').classList.toggle('on',scrollY>200));
-cargarMenu();
 </script>
+<script src="admin-auth.js?v=20261105-3"></script>
+<script src="menu-app.js?v=20261105-3"></script>
 </body>
 </html>
